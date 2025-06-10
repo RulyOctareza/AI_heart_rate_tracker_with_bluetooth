@@ -20,3 +20,5 @@ class HeartRateReceived extends BleEvent {
 }
 
 class UploadData extends BleEvent {}
+
+class ResetData extends BleEvent {}

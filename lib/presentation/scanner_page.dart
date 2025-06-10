@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'ble_monitor_bloc.dart';
-import 'monitor_page.dart';
 
 class ScannerPage extends StatelessWidget {
-  const ScannerPage({super.key});
+  final VoidCallback? onToggleTheme;
+  const ScannerPage({super.key, this.onToggleTheme});
 
   @override
   Widget build(BuildContext context) {
@@ -16,63 +17,70 @@ class ScannerPage extends StatelessWidget {
           ).showSnackBar(SnackBar(content: Text(state.message)));
         }
         if (state is ConnectedState) {
-          // Hindari push berulang jika sudah di halaman MonitorPage
-          if (ModalRoute.of(context)?.settings.name != '/monitor') {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const MonitorPage(),
-                settings: RouteSettings(name: '/monitor'),
-              ),
-            );
-          }
+          context.go('/monitor');
         }
       },
       builder: (context, state) {
-        if (state is InitialState || state is ErrorState) {
-          return Scaffold(
-            appBar: AppBar(title: Text('BLE Scanner')),
-            body: Center(
-              child: ElevatedButton(
-                onPressed:
-                    () => context.read<BleMonitorBloc>().add(StartScan()),
-                child: Text('Start Scan'),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('BLE Scanner'),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Icons.light_mode
+                      : Icons.dark_mode,
+                ),
+                onPressed: onToggleTheme,
               ),
-            ),
-          );
-        } else if (state is ScanningState) {
-          return Scaffold(
-            appBar: AppBar(title: Text('BLE Scanner')),
-            body: Center(child: CircularProgressIndicator()),
-          );
-        } else if (state is DeviceListState) {
-          return Scaffold(
-            appBar: AppBar(title: Text('BLE Scanner')),
-            body: ListView.builder(
-              itemCount: state.devices.length,
-              itemBuilder: (context, i) {
-                final r = state.devices[i];
-                return ListTile(
-                  title: Text(
-                    r.device.advName.isEmpty ? '(unknown)' : r.device.advName,
-                  ),
-                  subtitle: Text(r.device.remoteId.str),
-                  trailing: Text('${r.rssi}'),
-                  onTap:
-                      () => context.read<BleMonitorBloc>().add(
-                        ConnectToDevice(r.device),
-                      ),
-                );
-              },
-            ),
-          );
-        } else if (state is ConnectingState) {
-          return Scaffold(
-            appBar: AppBar(title: Text('BLE Scanner')),
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        return SizedBox.shrink();
+              IconButton(
+                icon: const Icon(Icons.history),
+                onPressed: () => context.go('/history'),
+              ),
+            ],
+          ),
+          body: _buildBody(context, state),
+        );
       },
     );
+  }
+
+  Widget _buildBody(BuildContext context, BleState state) {
+    if (state is InitialState || state is ErrorState) {
+      return Center(
+        child: ElevatedButton(
+          onPressed: () => context.read<BleMonitorBloc>().add(StartScan()),
+          child: const Text('Start Scan'),
+        ),
+      );
+    } else if (state is ScanningState) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (state is DeviceListState) {
+      if (state.devices.isEmpty) {
+        return const Center(child: Text('No devices found'));
+      }
+      return ListView.separated(
+        itemCount: state.devices.length,
+        separatorBuilder: (_, __) => Divider(height: 1),
+        itemBuilder: (context, i) {
+          final r = state.devices[i];
+          return ListTile(
+            leading: const Icon(Icons.bluetooth, color: Colors.blue),
+            title: Text(
+              r.device.advName.isEmpty ? '(unknown)' : r.device.advName,
+            ),
+            subtitle: Text(r.device.remoteId.str),
+            trailing: Text('${r.rssi}'),
+            onTap:
+                () => context.read<BleMonitorBloc>().add(
+                  ConnectToDevice(r.device),
+                ),
+          );
+        },
+      );
+    } else if (state is ConnectingState) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return const SizedBox.shrink();
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../domain/heart_rate_model.dart';
+import '../data/heart_rate_db.dart';
 
 part 'ble_event.dart';
 part 'ble_state.dart';
@@ -62,7 +63,17 @@ class BleMonitorBloc extends Bloc<BleEvent, BleState> {
       }
     });
 
-    on<HeartRateReceived>((event, emit) {
+    on<HeartRateReceived>((event, emit) async {
+      // Simpan ke database setiap kali data baru diterima
+      await HeartRateDb.insert(
+        HeartRateModel(bpm: event.bpm, timestamp: DateTime.now()),
+      );
+      emit(HeartRateUpdated(List.from(_data)));
+    });
+
+    on<ResetData>((event, emit) async {
+      _data.clear();
+      await HeartRateDb.clearAll();
       emit(HeartRateUpdated(List.from(_data)));
     });
 
