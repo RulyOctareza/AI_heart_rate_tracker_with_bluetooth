@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/preview/hero.png" alt="Heart Rate Tracker — ilustrasi aplikasi pemantau detak jantung BLE" width="100%">
+  <img src="docs/preview/hero.svg" alt="Heart Rate Tracker — ilustrasi aplikasi pemantau detak jantung BLE" width="100%">
 </p>
 
 <h1 align="center">AI Heart Rate Tracker</h1>
